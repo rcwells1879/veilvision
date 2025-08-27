@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.4",
+    "@google/genai": "^1.15.0",
     "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.1",
     "lucide-react": "^0.542.0",

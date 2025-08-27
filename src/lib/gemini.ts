@@ -1,10 +1,9 @@
-import { GoogleGenerativeAI, GenerationConfig } from '@google/generative-ai'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+import { GoogleGenAI, Modality } from '@google/genai'
 
 export interface GenerationRequest {
   image: File
   prompt: string
+  apiKey: string
 }
 
 export interface GenerationResult {
@@ -14,47 +13,51 @@ export interface GenerationResult {
 }
 
 export class GeminiService {
-  // Using the correct Gemini 2.5 Flash Vision model for image generation/editing
-  private model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' })
-
-  async generateImage({ image, prompt }: GenerationRequest): Promise<GenerationResult> {
+  async generateImage({ image, prompt, apiKey }: GenerationRequest): Promise<GenerationResult> {
     try {
+      // Initialize the SDK with the provided API key
+      const ai = new GoogleGenAI({ apiKey })
+      const model = 'gemini-2.5-flash-image-preview'
+      
       // Convert File to base64
-      const imageData = await this.fileToBase64(image)
+      const base64Data = await this.fileToBase64(image)
       
-      // Prepare the prompt for image transformation using conversational approach
-      const fullPrompt = `I want you to transform this image based on the following request: "${prompt}". 
-        Please generate a new version of this image that fulfills the request while maintaining the core elements of the original.`
-
-      // Configuration for image generation
-      const generationConfig: GenerationConfig = {
-        maxOutputTokens: 32768,
-        temperature: 0.8,
+      // Prepare image part for API
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: image.type,
+        },
       }
-      
-      const result = await this.model.generateContent(
-        [
-          fullPrompt,
-          {
-            inlineData: {
-              data: imageData,
-              mimeType: image.type
-            }
-          }
-        ],
-        { generationConfig }
+
+      // Prepare text part
+      const textPart = {
+        text: `Transform this image: ${prompt}`,
+      }
+
+      // Make the API call
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: { parts: [imagePart, textPart] },
+        config: {
+          responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+      })
+
+      // Extract the generated image data from the response
+      const imageEditPart = response.candidates?.[0]?.content?.parts?.find(
+        (p: { inlineData?: { data: string } }) => p.inlineData
       )
 
-      const response = await result.response
-      
-      // For Gemini 2.5 Flash Image Preview, the response should contain the generated image
-      // This implementation assumes the API returns image data directly
-      // You may need to adjust based on the actual response format
-      const generatedContent = response.text()
-
-      return {
-        success: true,
-        imageUrl: generatedContent // This may need adjustment based on actual API response
+      if (imageEditPart) {
+        const base64ImageData = imageEditPart.inlineData.data
+        const imageUrl = `data:image/png;base64,${base64ImageData}`
+        return {
+          success: true,
+          imageUrl
+        }
+      } else {
+        throw new Error('No image was generated in the response.')
       }
     } catch (error) {
       console.error('Gemini generation error:', error)
@@ -66,24 +69,28 @@ export class GeminiService {
   }
 
   // For analyzing images without transformation (using regular Gemini 2.5 Flash)
-  async analyzeImage({ image, prompt }: GenerationRequest): Promise<{ success: boolean; analysis?: string; error?: string }> {
+  async analyzeImage({ image, prompt, apiKey }: GenerationRequest): Promise<{ success: boolean; analysis?: string; error?: string }> {
     try {
-      const regularModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      const ai = new GoogleGenAI({ apiKey })
       const imageData = await this.fileToBase64(image)
       
-      const result = await regularModel.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: imageData,
-            mimeType: image.type
-          }
-        }
-      ])
+      const imagePart = {
+        inlineData: {
+          data: imageData,
+          mimeType: image.type,
+        },
+      }
 
-      const response = await result.response
-      const analysis = response.text()
+      const textPart = {
+        text: prompt,
+      }
 
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [imagePart, textPart] },
+      })
+
+      const analysis = response.text
       return {
         success: true,
         analysis
@@ -110,11 +117,13 @@ export class GeminiService {
     })
   }
 
-  async validateApiKey(): Promise<boolean> {
+  async validateApiKey(apiKey: string): Promise<boolean> {
     try {
-      // Simple validation using Gemini 2.5 Flash
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-      await model.generateContent('Hello, this is a test.')
+      const ai = new GoogleGenAI({ apiKey })
+      await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: 'Hello, this is a test.',
+      })
       return true
     } catch {
       return false
