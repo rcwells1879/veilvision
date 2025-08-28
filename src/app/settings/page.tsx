@@ -10,9 +10,31 @@ export default function SettingsPage() {
     imageQuality: 'high',
     maxGenerations: 10
   })
+  
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gemini-api-key') || ''
+    }
+    return ''
+  })
+  
+  const [apiKeySaved, setApiKeySaved] = useState(false)
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }))
+  }
+  
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value)
+    setApiKeySaved(false)
+  }
+  
+  const saveApiKey = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gemini-api-key', apiKey)
+      setApiKeySaved(true)
+      setTimeout(() => setApiKeySaved(false), 3000)
+    }
   }
 
   return (
@@ -69,13 +91,38 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Gemini API Key
                 </label>
-                <input
-                  type="password"
-                  placeholder="Enter your Gemini API key"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="Enter your Gemini API key"
+                    value={apiKey}
+                    onChange={(e) => handleApiKeyChange(e.target.value)}
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={saveApiKey}
+                    disabled={!apiKey.trim()}
+                    className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+                {apiKeySaved && (
+                  <p className="text-sm text-green-600 mt-1">
+                    ✓ API key saved successfully
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  Your API key is encrypted and stored securely
+                  Get your API key from{' '}
+                  <a 
+                    href="https://aistudio.google.com/apikey" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Google AI Studio
+                  </a>
+                  . Stored locally in your browser.
                 </p>
               </div>
               

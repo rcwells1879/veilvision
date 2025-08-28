@@ -85,3 +85,4 @@ Two main tables:
 - Tailwind utility classes for styling
 - Client-side state management with React hooks
 - File upload handling with FileReader API for base64 conversion
+- do not start the dev server after each update. I will do that myself. If you do start the dev server for testing always remember to kill it when your tests are complete.
