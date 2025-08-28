@@ -5,7 +5,6 @@ import { Upload, Image, Settings, Sparkles, Loader, RotateCcw, Move, X } from 'l
 import { GeminiService } from '@/lib/gemini'
 
 export default function Dashboard() {
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [workingImage, setWorkingImage] = useState<File | null>(null)
   const [originalImage, setOriginalImage] = useState<File | null>(null)
   const [prompt, setPrompt] = useState('')
@@ -99,7 +98,6 @@ export default function Dashboard() {
   const resetToOriginal = () => {
     if (originalImage) {
       setWorkingImage(originalImage)
-      setSelectedImage(originalImage)
       setGeneratedImage(null)
       setGenerationHistory([])
       setError(null)
@@ -195,7 +193,6 @@ export default function Dashboard() {
       }
       
       console.log('Setting working image to uploaded file')
-      setSelectedImage(file)
       setWorkingImage(file)
       setOriginalImage(file)
       setGeneratedImage(null)
@@ -294,7 +291,7 @@ export default function Dashboard() {
                 id="image-upload"
               />
               <label htmlFor="image-upload" className="cursor-pointer">
-                <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" alt="" />
+                <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <p className="text-gray-600">Click to upload an image</p>
                 <p className="text-sm text-gray-500 mt-2">PNG, JPG up to 10MB</p>
               </label>
