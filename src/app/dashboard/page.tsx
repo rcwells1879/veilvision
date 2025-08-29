@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Image, Settings, Sparkles, Loader, RotateCcw, Move, X } from 'lucide-react'
+import { Upload, Image, Settings, Sparkles, Loader, RotateCcw, Move, X, Camera } from 'lucide-react'
 import { GeminiService } from '@/lib/gemini'
+import WebcamCapture from '@/components/WebcamCapture'
 
 export default function Dashboard() {
   const [workingImage, setWorkingImage] = useState<File | null>(null)
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [fullscreenImageType, setFullscreenImageType] = useState<'working' | 'generated' | null>(null)
   const [workingImageUrl, setWorkingImageUrl] = useState<string | null>(null)
+  const [showWebcam, setShowWebcam] = useState(false)
 
   const geminiService = new GeminiService()
   
@@ -201,6 +203,22 @@ export default function Dashboard() {
     }
   }
 
+  // Handle webcam capture
+  const handleWebcamCapture = (imageFile: File) => {
+    console.log('Webcam image captured:', {
+      name: imageFile.name,
+      type: imageFile.type,
+      size: imageFile.size
+    })
+    
+    setWorkingImage(imageFile)
+    setOriginalImage(imageFile)
+    setGeneratedImage(null)
+    setGenerationHistory([])
+    setError(null)
+    setShowWebcam(false)
+  }
+
   const handleGenerate = async () => {
     console.log('🚀 handleGenerate function called')
     console.log('Current state:', {
@@ -290,11 +308,22 @@ export default function Dashboard() {
                 className="hidden"
                 id="image-upload"
               />
-              <label htmlFor="image-upload" className="cursor-pointer">
+              <label htmlFor="image-upload" className="cursor-pointer block">
                 <Image className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <p className="text-gray-600">Click to upload an image</p>
                 <p className="text-sm text-gray-500 mt-2">PNG, JPG up to 10MB</p>
               </label>
+              
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-gray-500 text-sm mb-3">or</p>
+                <button
+                  onClick={() => setShowWebcam(true)}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Take Photo
+                </button>
+              </div>
             </div>
             
             {workingImage && (
@@ -574,6 +603,14 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Webcam Modal */}
+        {showWebcam && (
+          <WebcamCapture
+            onCapture={handleWebcamCapture}
+            onClose={() => setShowWebcam(false)}
+          />
         )}
       </div>
     </div>
